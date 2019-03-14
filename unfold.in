@@ -1,0 +1,11 @@
+&inputpp
+  outdir = './'
+  prefix = 'MAPI'
+  first_k = 0 
+  last_k  = 0
+  first_band = 0
+  last_band = 0
+  SC(1,:) = 1, 2, 3
+  SC(2,:) = 4, 5, 6
+  SC(3,:) = 7, 8, 9
+/
