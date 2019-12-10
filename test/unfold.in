@@ -1,0 +1,11 @@
+&inputpp
+  outdir = './'
+  prefix = 'graphene'
+  first_k = 0 
+  last_k  = 0
+  first_band = 1
+  last_band = 18
+  SC(1,:) = 2, 0, 0
+  SC(2,:) = 0, 2, 0
+  SC(3,:) = 0, 0, 1
+/
