@@ -84,7 +84,7 @@ program unfold
   endif
 
   call invmat(3, SC, SC_inv)
-  at_puc = matmul(SC_inv, at)
+  at_puc = matmul(at, SC_inv)
 
   if (first_k <= 0) first_k = 1 
   if (last_k <= 0) last_k = nks
@@ -105,7 +105,7 @@ program unfold
     print '(6x,a,3F12.8)', 'a2 = ', at_puc(:,2)*alat/ANGSTROM_AU
     print '(6x,a,3F12.8)', 'a3 = ', at_puc(:,3)*alat/ANGSTROM_AU
     print *, ''
-    print '(5x,a)', "Supercell Matrix S, [t1 t2 t3] = S*[a1 a2 a3]^T"
+    print '(5x,a)', "Supercell Matrix S, [t1 t2 t3]^T = S*[a1 a2 a3]^T"
     print '(6x,3F12.0)', SC(1,:)
     print '(6x,3F12.0)', SC(2,:)
     print '(6x,3F12.0)', SC(3,:)
