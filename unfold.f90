@@ -12,6 +12,7 @@ program unfold
   USE io_global, ONLY : ionode, ionode_id, stdout
   USE environment,ONLY : environment_start, environment_end
 
+  USE ions_base, ONLY : nat, nsp, ityp, tau
   USE wvfct,     ONLY : nbnd, npwx, et
   USE klist,     ONLY : xk, nks, ngk, igk_k
   USE wavefunctions, ONLY : evc
@@ -19,19 +20,19 @@ program unfold
   USE noncollin_module, ONLY : npol, noncolin
   USE cell_base, ONLY: at, alat 
   USE matrix_inversion, only: invmat
+  USE uspp_param, ONLY : upf
 
   !
   implicit none
   character (len=256) :: outdir
   character(len=256), external :: trimcheck
   character(len=256) :: filename
-  integer :: npw, iunitout,ios,ik,i,ibnd, ig, is, ipw
-  logical :: exst
+  integer :: npw, iunitout,ios,ik,i,ibnd, ig, is, ipw, ipol, i1, i2
+  logical :: exst, any_uspp
   integer :: first_k, last_k, first_band, last_band, nk_sub, nbnd_sub
 
   real(dp) :: at_puc(3,3), SC_inv(3,3), SC(3,3)
 
-  complex(dp), allocatable :: aux(:), aux_nc(:,:)
   real(dp), allocatable :: wnk(:,:), enk(:,:), gvec(:,:), filter(:)
 
   NAMELIST / inputpp / outdir, prefix, first_k, last_k, first_band, last_band, SC
@@ -75,12 +76,14 @@ program unfold
   call read_file
   call openfil_pp 
 
-  if (noncolin) then
-    call errore('unfold', 'noncolinear case is not implemented', 1)
-  endif
-
   if (npool>1) then
-    call errore('unfold', 'npool>1 not allowed', 1)
+    call errore('unfold', 'npool>1 not allowed.', 1)
+  endif
+  
+  any_uspp = any(upf(1:nsp)%tvanp)
+
+  if (any_uspp) then
+    call errore('unfold', 'uspp not supported.', 1)
   endif
 
   call invmat(3, SC, SC_inv)
@@ -113,10 +116,11 @@ program unfold
     print '(5x,a,2I6)', 'first_k, last_k = ', first_k, last_k
     print '(5x,a,2I6)', 'first_band, last_band = ', first_band, last_band
     print *, ''
+    print *, 'noncolin = ', noncolin
+    print *, 'npol = ', npol
   endif
 
   allocate(wnk(nbnd_sub,nk_sub),enk(nbnd_sub,nk_sub))
-  allocate(aux(npwx))
   allocate(gvec(3,npwx))
   allocate(filter(npwx))
 
@@ -152,9 +156,14 @@ program unfold
     do ibnd = first_band, last_band
       enk(ibnd-first_band+1, ik-first_k+1) = et(ibnd,ik)
 
-      wnk(ibnd-first_band+1, ik-first_k+1) = sum(filter(1:npw) * dble(dconjg(evc(1:npw,ibnd))*evc(1:npw,ibnd)))
+      do ipol = 1, npol
 
-      ! print '(a,2I5,F12.6)', 'norm=', ik, ibnd, sum(dble(dconjg(evc(1:npw,ibnd))*evc(1:npw,ibnd)))
+        i1 = (ipol-1)*npwx+1
+        i2 = i1+npw-1
+
+        wnk(ibnd-first_band+1, ik-first_k+1) = wnk(ibnd-first_band+1, ik-first_k+1) + sum(filter(1:npw) * dble(dconjg(evc(i1:i2,ibnd))*evc(i1:i2,ibnd)))
+      enddo
+
     enddo
   enddo
 
@@ -168,7 +177,7 @@ program unfold
     write(12, "(a,2I6)") "# nbnd, nk = ", nbnd_sub, nk_sub
     do ibnd = 1, nbnd_sub
       do ik = 1, nk_sub
-        write(11, "(E12.6,1x)", advance='no') wnk(ibnd, ik)
+        write(11, "(F24.12,1x)", advance='no') wnk(ibnd, ik)
         write(12, "(F12.6,1x)", advance='no') enk(ibnd, ik)
       enddo
       write(11, *)
@@ -180,7 +189,10 @@ program unfold
 
   CALL environment_end ( 'UNFOLD' )
 
-  CALL mp_global_end 
+  CALL stop_pp ( )
+
+  ! this is needed because openfil is called above
+  CALL close_files ( .false. )
   stop
 
 end program unfold

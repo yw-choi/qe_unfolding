@@ -1,0 +1,116 @@
+
+     Program UNFOLD v.6.4.1 starts on 16Dec2019 at 12:21: 2 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI & OpenMP), running on     256 processor cores
+     Number of MPI processes:               256
+     Threads/MPI process:                     1
+
+     MPI processes distributed on     8 nodes
+     R & G space division:  proc/nbgrp/npool/nimage =     256
+
+     Reading data from directory:
+     ./graphene.save/
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation      = PBE ( 1  4  3  4 0 0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+ 
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min           4       4      1                  438      438      67
+     Max           5       5      2                  471      471      94
+     Sum        1069    1069    349               115397   115397   21055
+ 
+     Supercell lattice vectors (Ang.)
+      t1 =   4.92000000  0.00000000  0.00000000
+      t2 =   2.46000000  4.26084500  0.00000000
+      t3 =   0.00000000  0.00000000 20.00000000
+ 
+     Unitcell lattice vectors (Ang.)
+      a1 =   2.46000000  0.00000000  0.00000000
+      a2 =   1.23000000  2.13042250  0.00000000
+      a3 =   0.00000000  0.00000000 20.00000000
+ 
+     Supercell Matrix S, [t1 t2 t3]^T = S*[a1 a2 a3]^T
+                2.          0.          0.
+                0.          2.          0.
+                0.          0.          1.
+ 
+     first_k, last_k =      1    51
+     first_band, last_band =      1    40
+ 
+ noncolin =  T
+ npol =            2
+     Calculating wnk ...
+     k-point #      1
+     k-point #      2
+     k-point #      3
+     k-point #      4
+     k-point #      5
+     k-point #      6
+     k-point #      7
+     k-point #      8
+     k-point #      9
+     k-point #     10
+     k-point #     11
+     k-point #     12
+     k-point #     13
+     k-point #     14
+     k-point #     15
+     k-point #     16
+     k-point #     17
+     k-point #     18
+     k-point #     19
+     k-point #     20
+     k-point #     21
+     k-point #     22
+     k-point #     23
+     k-point #     24
+     k-point #     25
+     k-point #     26
+     k-point #     27
+     k-point #     28
+     k-point #     29
+     k-point #     30
+     k-point #     31
+     k-point #     32
+     k-point #     33
+     k-point #     34
+     k-point #     35
+     k-point #     36
+     k-point #     37
+     k-point #     38
+     k-point #     39
+     k-point #     40
+     k-point #     41
+     k-point #     42
+     k-point #     43
+     k-point #     44
+     k-point #     45
+     k-point #     46
+     k-point #     47
+     k-point #     48
+     k-point #     49
+     k-point #     50
+     k-point #     51
+     Writing wnk.dat ...
+ 
+     UNFOLD       :     31.17s CPU     47.11s WALL
+
+ 
+   This run was terminated on:  12:21:49  16Dec2019            
+
+=------------------------------------------------------------------------------=
+   JOB DONE.
+=------------------------------------------------------------------------------=
