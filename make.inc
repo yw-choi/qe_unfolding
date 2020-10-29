@@ -30,7 +30,7 @@
 # TOPDIR = $(dir $(abspath $(filter %make.inc,$(MAKEFILE_LIST))))
 # if it doesn't work, uncomment the following line (edit if needed):
 
-TOPDIR = /lily/ywchoe/codes/qe/6.4.1
+TOPDIR = /lily/ywchoe/env/intel19/codes/qe-6.5
 
 # DFLAGS  = precompilation options (possible arguments to -D and -U)
 #           used by the C compiler and preprocessor

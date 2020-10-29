@@ -8,13 +8,14 @@ program unfold
   USE mp_world,  ONLY : nproc, mpime, world_comm
   USE mp_pools,  ONLY : npool, nproc_pool, me_pool, my_pool_id, inter_pool_comm, intra_pool_comm
   USE mp,        ONLY : mp_bcast, mp_barrier, mp_sum
-  USE io_files,  ONLY : prefix, tmp_dir, diropn, nwordwfc, iunwfc
+  USE io_files,  ONLY : prefix, tmp_dir, diropn, nwordwfc, iunwfc, restart_dir
   USE io_global, ONLY : ionode, ionode_id, stdout
   USE environment,ONLY : environment_start, environment_end
 
   USE ions_base, ONLY : nat, nsp, ityp, tau
   USE wvfct,     ONLY : nbnd, npwx, et
   USE klist,     ONLY : xk, nks, ngk, igk_k
+  USE pw_restart_new,ONLY : read_collected_wfc
   USE wavefunctions, ONLY : evc
   USE gvect, ONLY : ngm, g 
   USE noncollin_module, ONLY : npol, noncolin
@@ -28,14 +29,14 @@ program unfold
   character(len=256), external :: trimcheck
   character(len=256) :: filename
   integer :: npw, iunitout,ios,ik,i,ibnd, ig, is, ipw, ipol, i1, i2
-  logical :: exst, any_uspp
+  logical :: exst, any_uspp, sumover_G_uc, needwf
   integer :: first_k, last_k, first_band, last_band, nk_sub, nbnd_sub
 
   real(dp) :: at_puc(3,3), SC_inv(3,3), SC(3,3)
 
   real(dp), allocatable :: wnk(:,:), enk(:,:), gvec(:,:), filter(:)
 
-  NAMELIST / inputpp / outdir, prefix, first_k, last_k, first_band, last_band, SC
+  NAMELIST / inputpp / outdir, prefix, first_k, last_k, first_band, last_band, SC, sumover_G_uc
 
   !
   CALL mp_startup ( start_images = .false. )
@@ -45,23 +46,26 @@ program unfold
   CALL get_environment_variable( 'ESPRESSO_TMPDIR', outdir )
   IF ( TRIM( outdir ) == ' ' ) outdir = './'
   !
+  ! set defaults:
+  first_k = 0
+  last_k = 0
+  first_band = 0
+  last_band = 0
+  !
+  ios = 0
+  !
   IF ( ionode )  THEN
-    !
-    ! set defaults:
-    first_k = 0
-    last_k = 0
-    first_band = 0
-    last_band = 0
     !
     CALL input_from_file ( )
     ! 
     READ (5, inputpp, iostat = ios)
-    CALL errore ('UNFOLD', 'reading inputpp namelist', ABS (ios) )
     !
     tmp_dir = trimcheck (outdir)
     ! 
   END IF
-
+  ! 
+  CALL mp_bcast (ios, ionode_id, world_comm )
+  CALL errore ('UNFOLD', 'reading inputpp namelist', ABS (ios) )
   !
   ! ... Broadcast variables
   !
@@ -72,9 +76,10 @@ program unfold
   CALL mp_bcast( first_band, ionode_id, world_comm )
   CALL mp_bcast( last_band, ionode_id, world_comm )
   CALL mp_bcast( SC, ionode_id, world_comm )
+  CALL mp_bcast( sumover_G_uc, ionode_id, world_comm )
 
-  call read_file
-  call openfil_pp 
+  needwf = .true.
+  CALL read_file_new ( needwf )
 
   if (npool>1) then
     call errore('unfold', 'npool>1 not allowed.', 1)
@@ -133,24 +138,37 @@ program unfold
       print '(5x,a,I6)', 'k-point # ', ik
     endif
 
-    call davcio (evc, 2*nwordwfc, iunwfc, ik, -1)
     npw = ngk(ik)
+    CALL read_collected_wfc ( restart_dir() , ik, evc )
 
     ! G-vectors in cartesian coordinate, used in |k+G>
     gvec(1:3,1:npw) = g(1:3,igk_k(1:npw,ik))
 
     ! transform to cryst. coordinate of the primitive unit cell
     call cryst_to_cart(npw, gvec, at_puc, -1)
+
     filter = 0.d0
-    do ipw = 1, npw
-      if (abs(gvec(1,ipw)-int(gvec(1,ipw))).lt.eps12.and.&
-          abs(gvec(2,ipw)-int(gvec(2,ipw))).lt.eps12.and.&
-          abs(gvec(3,ipw)-int(gvec(3,ipw))).lt.eps12) then
-          filter(ipw) = 1.d0
-      else
-          filter(ipw) = 0.d0
-      endif
-    enddo
+    if (sumover_G_uc) then
+      do ipw = 1, npw
+        if (abs(gvec(1,ipw)-int(gvec(1,ipw))).lt.eps12.and.&
+            abs(gvec(2,ipw)-int(gvec(2,ipw))).lt.eps12.and.&
+            abs(gvec(3,ipw)-int(gvec(3,ipw))).lt.eps12) then
+            filter(ipw) = 1.d0
+        else
+            filter(ipw) = 0.d0
+        endif
+      enddo
+    else
+      do ipw = 1, npw
+        if (abs(gvec(1,ipw)).lt.eps12.and.&
+            abs(gvec(2,ipw)).lt.eps12.and.&
+            abs(gvec(3,ipw)).lt.eps12) then
+            filter(ipw) = 1.d0
+        else
+            filter(ipw) = 0.d0
+        endif
+      enddo
+    endif
 
     wnk(:,ik-first_k+1) = 0.d0
     do ibnd = first_band, last_band
@@ -163,7 +181,6 @@ program unfold
 
         wnk(ibnd-first_band+1, ik-first_k+1) = wnk(ibnd-first_band+1, ik-first_k+1) + sum(filter(1:npw) * dble(dconjg(evc(i1:i2,ibnd))*evc(i1:i2,ibnd)))
       enddo
-
     enddo
   enddo
 
@@ -187,12 +204,14 @@ program unfold
     close(12)
   endif
 
+  deallocate(wnk,enk)
+  deallocate(gvec)
+  deallocate(filter)
+
   CALL environment_end ( 'UNFOLD' )
 
   CALL stop_pp ( )
 
-  ! this is needed because openfil is called above
-  CALL close_files ( .false. )
   stop
 
 end program unfold
