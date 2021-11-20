@@ -20,9 +20,9 @@ program unfold
   USE klist,     ONLY : xk, nkstot, nks, ngk, igk_k
   USE pw_restart_new,ONLY : read_collected_wfc
   USE wavefunctions, ONLY : evc
-  USE gvect, ONLY : ngm, g 
+  USE gvect, ONLY : ngm, g
   USE noncollin_module, ONLY : npol, noncolin
-  USE cell_base, ONLY: at, alat 
+  USE cell_base, ONLY: at, alat
   USE matrix_inversion, only: invmat
   USE uspp_param, ONLY : upf
 
@@ -62,13 +62,13 @@ program unfold
   IF ( ionode )  THEN
     !
     CALL input_from_file ( )
-    ! 
+    !
     READ (5, inputpp, iostat = ios)
     !
     tmp_dir = trimcheck (outdir)
-    ! 
+    !
   END IF
-  ! 
+  !
   CALL mp_bcast (ios, ionode_id, world_comm )
   CALL errore ('UNFOLD', 'reading inputpp namelist', ABS (ios) )
   !
@@ -93,7 +93,7 @@ program unfold
   call invmat(3, SC, SC_inv)
   at_puc = matmul(at, SC_inv)
 
-  if (first_band <= 0) first_band = 1 
+  if (first_band <= 0) first_band = 1
   if (last_band <= 0) last_band = nbnd
 
   nbnd_sub = last_band - first_band + 1
@@ -161,14 +161,15 @@ program unfold
             filter(ipw) = 0.d0
         endif
       enddo
-  
+
       do ibnd = first_band, last_band
         do ipol = 1, npol
 
           i1 = (ipol-1)*npwx+1
           i2 = i1+npw-1
 
-          wnk(ibnd-first_band+1, ik) = wnk(ibnd-first_band+1, ik) + sum(filter(1:npw) * dble(dconjg(evc(i1:i2,ibnd))*evc(i1:i2,ibnd)))
+          wnk(ibnd-first_band+1, ik) = wnk(ibnd-first_band+1, ik) + &
+            sum(filter(1:npw) * dble(dconjg(evc(i1:i2,ibnd))*evc(i1:i2,ibnd)))
         enddo
       enddo
 
@@ -178,12 +179,13 @@ program unfold
             abs(gvec(2,ipw)).lt.eps12.and.&
             abs(gvec(3,ipw)).lt.eps12) then
 
-          ! print '(3i10)', ik, mpime, ipw 
+          ! print '(3i10)', ik, mpime, ipw
 
           do ibnd = first_band, last_band
             do ipol = 1, npol
               i1 = (ipol-1)*npwx
-              wnk(ibnd-first_band+1,ik) = wnk(ibnd-first_band+1,ik) + dconjg(evc(i1+ipw,ibnd))*evc(i1+ipw,ibnd)
+              wnk(ibnd-first_band+1,ik) = wnk(ibnd-first_band+1,ik) + &
+                dconjg(evc(i1+ipw,ibnd))*evc(i1+ipw,ibnd)
             enddo
           enddo
 
