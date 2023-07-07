@@ -21,8 +21,6 @@ But, you must specify TOPDIR, which is the top directory of your QE(>6.4).
 &inputpp
   outdir = './'
   prefix = 'graphene'
-  first_k = 0 
-  last_k  = 0
   first_band = 1
   last_band = 18
   SC(1,:) = 2, 0, 0
